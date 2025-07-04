@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>營養補充品標籤分析器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE',
+                        'primary-dark': '#4B4BC8'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .markdown-content h3 {
+            @apply text-lg font-semibold mt-4 mb-2 text-gray-800 dark:text-gray-200;
+        }
+        .markdown-content h4 {
+            @apply text-base font-medium mt-3 mb-1 text-gray-700 dark:text-gray-300;
+        }
+        .markdown-content ul {
+            @apply list-disc pl-5 space-y-1 text-gray-600 dark:text-gray-400;
+        }
+        .markdown-content li {
+            @apply text-sm leading-relaxed;
+        }
+        .markdown-content p {
+            @apply text-sm text-gray-600 dark:text-gray-400 mb-2;
+        }
+        .markdown-content strong {
+            @apply font-semibold text-gray-800 dark:text-gray-200;
+        }
+    </style>
+</head>
+<body class="bg-white dark:bg-gray-900 transition-colors duration-300">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-primary dark:bg-primary-dark text-white shadow-lg">
+            <div class="container mx-auto px-4 py-6">
+                <h1 class="text-2xl font-bold text-center">🏷️ 營養補充品標籤分析器</h1>
+                <p class="text-center mt-2 text-primary-100">上傳營養標籤圖片，即時獲得營養素功效分析</p>
+            </div>
+        </header>
+
+        <main class="container mx-auto px-4 py-8 max-w-4xl">
+            <!-- Personal Information Section -->
+            <div class="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg p-6 mb-8 border border-purple-200 dark:border-purple-800">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+                    <span class="mr-2">👤</span>
+                    個人資料 (可選，用於個人化建議)
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Gender -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">性別</label>
+                        <select id="gender" class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                            <option value="">請選擇</option>
+                            <option value="male">男性</option>
+                            <option value="female">女性</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Age -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">年齡</label>
+                        <input type="number" id="age" min="1" max="120" placeholder="例: 30" class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    </div>
+                    
+                    <!-- Height -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">身高 (cm)</label>
+                        <input type="number" id="height" min="50" max="250" placeholder="例: 170" class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    </div>
+                    
+                    <!-- Weight -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">體重 (kg)</label>
+                        <input type="number" id="weight" min="20" max="300" step="0.1" placeholder="例: 65" class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    </div>
+                    
+                    <!-- Activity Level -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">活動量</label>
+                        <select id="activityLevel" class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                            <option value="">請選擇</option>
+                            <option value="sedentary">久坐 (很少運動)</option>
+                            <option value="light">輕度 (每週1-3次運動)</option>
+                            <option value="moderate">中度 (每週3-5次運動)</option>
+                            <option value="active">高度 (每週6-7次運動)</option>
+                            <option value="very_active">極高 (每天運動或體力工作)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Medical Conditions -->
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">長期病患或健康狀況</label>
+                    <textarea id="medicalConditions" rows="3" placeholder="例: 高血壓、糖尿病、心臟病、腎臟病、懷孕、哺乳等... (沒有請留空)" class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"></textarea>
+                </div>
+                
+                <!-- Current Medications -->
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">目前服用的藥物或其他補充品</label>
+                    <textarea id="currentMedications" rows="2" placeholder="例: 降血壓藥、維他命D、魚油等... (沒有請留空)" class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"></textarea>
+                </div>
+
+                <!-- Health Goals -->
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">想要改善的健康問題 (可多選)</label>
+                    
+                    <!-- Common Health Issues Checkboxes -->
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-3">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="skinIssues" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">皮膚問題</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="weightLoss" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">減肥瘦身</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="jointPain" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">關節疼痛</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="sciatica" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">坐骨神經痛</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="immunity" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">提升免疫力</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="energy" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">增加體力</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="sleep" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">改善睡眠</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="digestion" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">消化問題</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="memory" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">增強記憶</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="stress" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">舒緩壓力</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="heartHealth" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">心血管健康</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="eyeHealth" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">護眼明目</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="boneHealth" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">骨骼健康</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="hairHealth" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">頭髮健康</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="bloodSugar" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">血糖控制</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="cholesterol" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">膽固醇管理</span>
+                        </label>
+                    </div>
+
+                    <!-- Custom Health Goals -->
+                    <div class="mt-3">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">其他健康目標</label>
+                        <textarea id="customHealthGoals" rows="2" placeholder="例: 改善更年期症狀、緩解偏頭痛、提升運動表現等... (沒有請留空)" class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"></textarea>
+                    </div>
+                </div>
+
+                <!-- AI Smart Features -->
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">🤖 AI智能功能偏好 (可選，提升個人化體驗)</label>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="aiPersonalized" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">📊 AI個人化分析</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="smartRecommendation" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">🧠 智能產品推薦引擎</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="oneClickShopping" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">🛒 一鍵購物整合</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="progressTracking" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">📈 健康成效追蹤</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="brandPartnership" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">🤝 品牌合作優惠</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="premiumMembership" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">👑 高級會員訂閱</span>
+                        </label>
+                    </div>
+
+                    <div class="mb-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-800 rounded-md">
+                        <p class="text-xs font-medium text-purple-800 dark:text-purple-200 mb-2">🚀 智能功能說明</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-purple-700 dark:text-purple-300">
+                            <div>• 📊 基於健康數據的AI深度分析</div>
+                            <div>• 🛒 直接購買連結，享受獨家優惠</div>
+                            <div>• 📈 追蹤使用效果和健康改善進度</div>
+                            <div>• 🤝 品牌合作專屬折扣和新品搶先</div>
+                            <div>• 👑 專業營養師線上諮詢服務</div>
+                            <div>• 🔬 最新營養科學研究資訊推送</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Budget -->
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">💰 每月營養補充品預算 (可選，AI將推薦最適合的品牌組合)</label>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="radio" name="budget" id="budget1" value="under650" class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">HK$ 650 以下</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="radio" name="budget" id="budget2" value="650-1000" class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">HK$ 650-1,000</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="radio" name="budget" id="budget3" value="1000-1500" class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">HK$ 1,000-1,500</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="radio" name="budget" id="budget4" value="over1500" class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">HK$ 1,500 以上</span>
+                        </label>
+                    </div>
+
+                    <div class="mb-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                        <p class="text-xs font-medium text-green-800 dark:text-green-200 mb-2">💰 預算對應AI推薦方案</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-green-700 dark:text-green-300">
+                            <div>• HK$ 650以下：經濟實惠智能組合</div>
+                            <div>• HK$ 650-1,000：經濟實惠進階AI組合</div>
+                            <div>• HK$ 1,000-1,500：優質平衡智能組合</div>
+                            <div>• HK$ 1,500以上：頂級專業AI組合</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">自訂每月預算 (可選)</label>
+                        <input type="number" id="customBudget" min="100" max="5000" placeholder="例: 800" class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">AI將根據您的精確預算提供最佳化推薦</p>
+                    </div>
+                </div>
+
+                <!-- Specific Improvement Targets -->
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">具體改善目標 (可選，有助於更精準的建議)</label>
+                    
+                    <!-- Common Target Examples -->
+                    <div class="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                        <p class="text-xs font-medium text-blue-800 dark:text-blue-200 mb-2">💡 建議格式：時間 + 具體目標</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-blue-700 dark:text-blue-300">
+                            <div>• 三個月內減肥20磅</div>
+                            <div>• 六週內改善睡眠品質</div>
+                            <div>• 兩個月內血糖回復正常</div>
+                            <div>• 一個月內減少關節疼痛</div>
+                            <div>• 四週內提升體力和精神</div>
+                            <div>• 三個月內改善皮膚狀況</div>
+                        </div>
+                    </div>
+
+                    <!-- Target Input Fields -->
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">目標 1</label>
+                            <input type="text" id="target1" placeholder="例: 三個月內減肥20磅" class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">目標 2</label>
+                            <input type="text" id="target2" placeholder="例: 兩個月內血糖回復正常水平" class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">目標 3</label>
+                            <input type="text" id="target3" placeholder="例: 六週內改善睡眠品質，每晚睡足7小時" class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                    <p class="text-sm text-yellow-800 dark:text-yellow-200">
+                        ⚠️ <strong>重要提醒：</strong>此分析僅供參考，不能取代專業醫療建議。如有健康問題或正在服用藥物，請諮詢醫生或營養師。
+                    </p>
+                </div>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 mb-8">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">📸 上傳營養標籤圖片</h2>
+                
+                <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
+                    <input type="file" id="imageInput" accept="image/*" class="hidden">
+                    <label for="imageInput" class="cursor-pointer">
+                        <div class="space-y-4">
+                            <div class="text-4xl">📷</div>
+                            <div>
+                                <p class="text-lg font-medium text-gray-700 dark:text-gray-300">點擊選擇圖片</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">支援 JPG, PNG, WebP 格式</p>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Preview -->
+                <div id="imagePreview" class="mt-4 hidden">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">圖片預覽：</h3>
+                    <img id="previewImg" class="max-w-full h-auto max-h-64 rounded-lg shadow-md mx-auto">
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="mt-6 space-y-3">
+                    <button id="analyzeBtn" class="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed hidden">
+                        🔍 分析營養標籤
+                    </button>
+                    
+                    <button id="recommendBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        💊 獲取營養產品推薦
+                    </button>
+                    
+                    <p class="text-xs text-gray-500 dark:text-gray-400 text-center">
+                        上傳圖片可分析現有產品，或直接獲取推薦
+                    </p>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="hidden bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-8">
+                <div class="flex items-center space-x-3">
+                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    <span class="text-blue-700 dark:text-blue-300">正在分析營養標籤...</span>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div id="errorState" class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 mb-8">
+                <div class="flex items-center space-x-3 mb-3">
+                    <span class="text-red-600 dark:text-red-400">❌</span>
+                    <span class="text-red-700 dark:text-red-300" id="errorMessage">分析過程中發生錯誤，請稍後再試。</span>
+                </div>
+                <div id="errorDetails" class="hidden mt-3 p-3 bg-red-100 dark:bg-red-900/40 rounded text-xs text-red-600 dark:text-red-400 font-mono">
+                    <!-- Detailed error info will be shown here -->
+                </div>
+                <button id="showDebugBtn" class="mt-3 text-sm text-red-600 dark:text-red-400 underline hover:no-underline">
+                    顯示調試資訊
+                </button>
+            </div>
+
+            <!-- Debug Info -->
+            <div id="debugInfo" class="hidden bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-8">
+                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">🔧 調試資訊</h3>
+                <div id="debugContent" class="text-xs text-gray-600 dark:text-gray-400 font-mono whitespace-pre-wrap">
+                    <!-- Debug info will be shown here -->
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="resultsSection" class="hidden space-y-6">
+                <!-- Product Recommendations -->
+                <div id="productRecommendationsSection" class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6 hidden">
+                    <h2 class="text-xl font-semibold mb-4 text-purple-800 dark:text-purple-200 flex items-center">
+                        <span class="mr-2">🌟</span>
+                        營養產品推薦
+                    </h2>
+                    <div id="productRecommendations" class="markdown-content">
+                        <!-- AI recommendations will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Personal Suitability -->
+                <div id="personalSuitabilitySection" class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-6 hidden">
+                    <h2 class="text-xl font-semibold mb-4 text-indigo-800 dark:text-indigo-200 flex items-center">
+                        <span class="mr-2">🎯</span>
+                        個人化適用性評估
+                    </h2>
+                    <div id="personalSuitability" class="markdown-content">
+                        <!-- AI personal analysis will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Nutritional Analysis -->
+                <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-green-800 dark:text-green-200 flex items-center">
+                        <span class="mr-2">📊</span>
+                        營養成分分析
+                    </h2>
+                    <div id="nutritionalAnalysis" class="markdown-content">
+                        <!-- AI analysis will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Health Benefits -->
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-800 dark:text-blue-200 flex items-center">
+                        <span class="mr-2">💊</span>
+                        營養素功效
+                    </h2>
+                    <div id="healthBenefits" class="markdown-content">
+                        <!-- AI analysis will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Dosage Recommendations -->
+                <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-amber-800 dark:text-amber-200 flex items-center">
+                        <span class="mr-2">⚖️</span>
+                        建議攝取量
+                    </h2>
+                    <div id="dosageRecommendations" class="markdown-content">
+                        <!-- AI analysis will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Safety Information -->
+                <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-red-800 dark:text-red-200 flex items-center">
+                        <span class="mr-2">⚠️</span>
+                        注意事項
+                    </h2>
+                    <div id="safetyInfo" class="markdown-content">
+                        <!-- AI analysis will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Reset Button -->
+                <div class="text-center pt-4">
+                    <button id="resetBtn" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200">
+                        🔄 分析新的標籤
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tips Section -->
+            <div class="mt-12 bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
+                <h2 class="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200">💡 使用小貼士</h2>
+                <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                    <li>• 確保標籤文字清晰可見，避免模糊或反光</li>
+                    <li>• 建議拍攝完整的營養成分表</li>
+                    <li>• 如果標籤很小，可以近距離拍攝提高清晰度</li>
+                    <li>• 支援中文、英文等多種語言的營養標籤</li>
+                </ul>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Dark mode detection
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // DOM elements
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loadingState = document.getElementById('loadingState');
+        const errorState = document.getElementById('errorState');
+        const errorMessage = document.getElementById('errorMessage');
+        const resultsSection = document.getElementById('resultsSection');
+        const resetBtn = document.getElementById('resetBtn');
+
+        let selectedFile = null;
+        let debugLog = [];
+
+        // Debug logging function
+        function addDebugLog(message, data = null) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            debugLog.push(logEntry);
+            if (data) {
+                debugLog.push(`    Data: ${JSON.stringify(data)}`);
+            }
+            console.log(logEntry, data);
+            updateDebugDisplay();
+        }
+
+        function updateDebugDisplay() {
+            const debugContent = document.getElementById('debugContent');
+            if (debugContent) {
+                debugContent.textContent = debugLog.join('\n');
+            }
+        }
+
+        // Debug button event
+        document.getElementById('showDebugBtn').addEventListener('click', function() {
+            const debugInfo = document.getElementById('debugInfo');
+            const errorDetails = document.getElementById('errorDetails');
+            if (debugInfo.classList.contains('hidden')) {
+                debugInfo.classList.remove('hidden');
+                errorDetails.classList.remove('hidden');
+                this.textContent = '隱藏調試資訊';
+            } else {
+                debugInfo.classList.add('hidden');
+                errorDetails.classList.add('hidden');
+                this.textContent = '顯示調試資訊';
+            }
+        });
+
+        // Initialize debug
+        addDebugLog('應用程式啟動');
+
+        // Image compression function
+        function compressImage(file, maxSizeMB = 2, quality = 0.8) {
+            return new Promise((resolve, reject) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = function() {
+                    // Calculate new dimensions
+                    let { width, height } = img;
+                    const maxDimension = 1200; // Max width or height
+                    
+                    if (width > height && width > maxDimension) {
+                        height = (height * maxDimension) / width;
+                        width = maxDimension;
+                    } else if (height > maxDimension) {
+                        width = (width * maxDimension) / height;
+                        height = maxDimension;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Draw and compress
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    canvas.toBlob(
+                        (blob) => {
+                            if (blob) {
+                                addDebugLog('圖片壓縮完成', {
+                                    originalSize: file.size,
+                                    compressedSize: blob.size,
+                                    compressionRatio: (blob.size / file.size * 100).toFixed(1) + '%'
+                                });
+                                
+                                // Create new file with compressed data
+                                const compressedFile = new File([blob], file.name, {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now()
+                                });
+                                resolve(compressedFile);
+                            } else {
+                                reject(new Error('圖片壓縮失敗'));
+                            }
+                        },
+                        'image/jpeg',
+                        quality
+                    );
+                };
+                
+                img.onerror = () => reject(new Error('無法載入圖片進行壓縮'));
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        // Handle file selection
+        imageInput.addEventListener('change', async function(e) {
+            addDebugLog('檔案輸入框變更事件');
+            const file = e.target.files[0];
+            if (file) {
+                addDebugLog('檔案已選擇', {
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    lastModified: file.lastModified
+                });
+                
+                // Check file type
+                if (!file.type.startsWith('image/')) {
+                    addDebugLog('檔案類型錯誤', { type: file.type });
+                    showError('請選擇圖片文件 (JPG, PNG, WebP)', `檔案類型: ${file.type}`);
+                    return;
+                }
+                
+                try {
+                    // Compress image if it's too large
+                    let processedFile = file;
+                    if (file.size > 1024 * 1024) { // If larger than 1MB
+                        addDebugLog('檔案過大，開始壓縮');
+                        processedFile = await compressImage(file);
+                    }
+                    
+                    selectedFile = processedFile;
+                    
+                    addDebugLog('開始讀取檔案預覽');
+                    // Show preview
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        addDebugLog('檔案預覽載入完成', {
+                            resultLength: e.target.result.length,
+                            resultType: typeof e.target.result
+                        });
+                        previewImg.src = e.target.result;
+                        imagePreview.classList.remove('hidden');
+                        analyzeBtn.classList.remove('hidden');
+                        hideError();
+                    };
+                    reader.onerror = function(error) {
+                        addDebugLog('檔案讀取錯誤', error);
+                        showError('無法讀取選擇的圖片文件', `錯誤: ${error}`);
+                    };
+                    reader.readAsDataURL(processedFile);
+                    
+                } catch (error) {
+                    addDebugLog('檔案處理錯誤', error);
+                    showError('處理圖片時發生錯誤', error.message);
+                }
+            } else {
+                addDebugLog('未選擇檔案');
+                selectedFile = null;
+                imagePreview.classList.add('hidden');
+                analyzeBtn.classList.add('hidden');
+            }
+        });
+
+        // Check if we're running on Poe platform or standalone
+        function checkPlatform() {
+            if (typeof window.Poe !== 'undefined') {
+                return 'poe';
+            } else {
+                return 'standalone';
+            }
+        }
+
+        // Initialize platform-specific handlers
+        function initializePlatform() {
+            const platform = checkPlatform();
+            
+            if (platform === 'poe') {
+                initializePoeHandlers();
+            } else {
+                initializeStandaloneMode();
+            }
+            
+            return platform;
+        }
+
+        function initializeStandaloneMode() {
+            console.log('Running in standalone mode');
+            
+            // Show standalone mode notice
+            const standaloneNotice = document.createElement('div');
+            standaloneNotice.className = 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6';
+            standaloneNotice.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <div class="text-blue-600 text-2xl">🌐</div>
+                    <div>
+                        <h3 class="text-blue-800 dark:text-blue-200 font-semibold text-lg">獨立模式運行</h3>
+                        <p class="text-blue-700 dark:text-blue-300 text-sm mt-1">
+                            此應用程式正在獨立模式下運行。AI分析功能將使用模擬數據進行演示。
+                            <br>完整功能請訪問 <a href="https://poe.com" target="_blank" class="underline">Poe平台版本</a>。
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            const header = document.querySelector('header');
+            header.insertAdjacentElement('afterend', standaloneNotice);
+        }
+
+        function initializePoeHandlers() {
+            // Register AI response handlers for Poe platform
+            window.Poe.registerHandler("nutrition-analysis", handleNutritionAnalysis);
+            window.Poe.registerHandler("product-recommendations", handleProductRecommendations);
+        }
+
+        // Initialize platform and handlers
+        const platform = initializePlatform();
+
+        // Standalone mode simulation functions
+        function simulateNutritionAnalysis(personalInfo) {
+            const mockAnalysis = `
+## 營養成分分析
+**模擬數據 - 以維他命D為例**
+- 維他命D3 (膽鈣化醇): 1000 IU
+- 鈣: 200mg  
+- 鎂: 100mg
+- 維他命K2: 45mcg
+
+## 營養素功效
+**維他命D3的功效：**
+- 促進鈣質吸收，維護骨骼健康
+- 支持免疫系統正常功能
+- 有助於肌肉功能維持
+- 參與細胞分裂過程
+
+**鈣的功效：**
+- 維持骨骼和牙齒健康
+- 支持肌肉收縮功能
+- 參與神經傳導
+
+## 建議攝取量
+- **維他命D3**: 每日1000-2000 IU
+- **鈣**: 每日800-1200mg
+- **建議服用時間**: 餐後服用，提升吸收率
+
+${personalInfo.bmi ? `## 個人化適用性評估\n根據您的BMI ${personalInfo.bmi}，此產品適合您使用。\n建議配合適度運動以提升維他命D合成效率。` : ''}
+
+## 注意事項
+- 避免與某些藥物同時服用
+- 腎功能不全者請諮詢醫生
+- 過量攝取可能導致高血鈣
+
+⚠️ **重要提醒**: 此為模擬數據，實際使用請諮詢專業醫療人員。
+            `;
+            
+            return mockAnalysis;
+        }
+
+        function simulateProductRecommendations(personalInfo) {
+            const healthGoals = personalInfo.healthGoals || [];
+            const budget = personalInfo.budget || 'HK$ 1,000';
+            
+            const mockRecommendations = `
+## 🎯 智能營養產品推薦系統
+
+### 針對您的健康目標推薦：
+
+${healthGoals.includes('提升免疫力') ? `
+**🛡️ 免疫力提升方案：**
+- **維他命C 1000mg** - NOW Foods
+  - 價格：HK$120/瓶 (60粒)
+  - 認證：GMP認證
+  - 購買連結：[iHerb優惠](https://iherb.com) - 15% OFF
+
+- **維他命D3 2000 IU** - Nature Made  
+  - 價格：HK$180/瓶 (100粒)
+  - 認證：USP認證
+  - 預期效果：4-6週內改善免疫功能
+` : ''}
+
+${healthGoals.includes('減肥瘦身') ? `
+**🏃‍♀️ 減肥瘦身方案：**
+- **綠茶萃取物** - Life Extension
+  - 價格：HK$280/瓶 (60粒)  
+  - 認證：第三方檢測
+  - 功效：提升新陳代謝，輔助脂肪燃燒
+
+- **左旋肉鹼** - NOW Foods
+  - 價格：HK$240/瓶 (90粒)
+  - 認證：GMP認證
+  - 配合運動效果更佳
+` : ''}
+
+### 💰 根據您的預算 ${budget}
+
+**推薦組合方案：**
+- 基礎健康套餐：約 HK$580/月
+- 進階營養組合：約 HK$850/月  
+- 頂級專業配置：約 HK$1,200/月
+
+${personalInfo.smartFeatures?.includes('一鍵購物整合') ? `
+### 🛒 一鍵購物整合
+**直接購買連結：**
+- [iHerb官網](https://iherb.com) - 新用戶15% OFF
+- [Vitacost](https://vitacost.com) - 滿額免運  
+- 屈臣氏門市 - 即時取貨
+
+**本月特惠：**
+- Thorne品牌：專屬8折優惠碼 "HEALTH20"
+- NOW Foods：買二送一特價中
+` : ''}
+
+${personalInfo.smartFeatures?.includes('健康成效追蹤') ? `
+### 📈 健康成效追蹤計劃
+**追蹤時程表：**
+- 第1週：記錄基礎數據（體重、精神狀態）
+- 第4週：初步效果評估  
+- 第8週：中期成果檢視
+- 第12週：整體效果評估
+
+**建議監測指標：**
+- 每日精神狀態評分
+- 每週體重變化
+- 睡眠品質改善程度
+` : ''}
+
+${personalInfo.smartFeatures?.includes('高級會員訂閱') ? `
+### 👑 高級會員訂閱服務
+**會員方案：**
+- 標準會員：HK$98/月 - 基礎諮詢服務
+- 高級會員：HK$198/月 - 專業營養師諮詢
+- 白金會員：HK$398/月 - 一對一定制方案
+
+**會員專屬福利：**
+- 每月30分鐘營養師線上諮詢
+- 新品免費試用資格  
+- 24/7專屬客服支援
+- 定期健康報告
+` : ''}
+
+### ⚠️ 注意事項
+- 此為演示模擬數據，實際產品建議請諮詢專業人員
+- 購買前請確認產品認證標誌
+- 如有慢性疾病，請先諮詢醫生
+
+**🌟 升級到完整版：** [訪問Poe平台](https://poe.com)獲得真實AI分析功能！
+            `;
+            
+            return mockRecommendations;
+        }
+
+        // Platform-specific initialization
+        if (platform === 'poe') {
+            // Handler for nutrition label analysis
+            window.Poe.registerHandler("nutrition-analysis", (result, context) => {
+                console.log('Handler called with result:', JSON.stringify(result));
+                
+                try {
+                    if (!result || !result.responses || result.responses.length === 0) {
+                        showError("沒有收到分析結果");
+                        resetAnalyzeButton();
+                        return;
+                    }
+                    
+                    const msg = result.responses[0];
+                    console.log('Message status:', msg.status, 'Content length:', msg.content?.length);
+                    
+                    if (msg.status === "error") {
+                        showError("分析過程中發生錯誤：" + (msg.statusText || "未知錯誤"));
+                        resetAnalyzeButton();
+                        return;
+                    }
+                    
+                    if (msg.status === "incomplete") {
+                        // Keep showing loading state
+                        return;
+                    }
+                    
+                    if (msg.status === "complete") {
+                        console.log('Analysis complete, displaying results');
+                        hideLoading();
+                        if (msg.content && msg.content.trim()) {
+                            parseAndDisplayResults(msg.content);
+                        } else {
+                            showError("收到空的分析結果");
+                        }
+                        resetAnalyzeButton();
+                    }
+                } catch (error) {
+                    console.error('Handler error:', error);
+                    showError("處理分析結果時發生錯誤：" + error.message);
+                    resetAnalyzeButton();
+                }
+            });
+
+            // Handler for product recommendations
+            window.Poe.registerHandler("product-recommendations", (result, context) => {
+                addDebugLog('推薦處理器被調用', result);
+                
+                try {
+                    if (!result || !result.responses || result.responses.length === 0) {
+                        showError("沒有收到推薦結果");
+                        resetRecommendButton();
+                        return;
+                    }
+                    
+                    const msg = result.responses[0];
+                    addDebugLog('推薦訊息狀態', { status: msg.status, contentLength: msg.content?.length });
+                    
+                    if (msg.status === "error") {
+                        showError("獲取推薦時發生錯誤：" + (msg.statusText || "未知錯誤"));
+                        resetRecommendButton();
+                        return;
+                    }
+                    
+                    if (msg.status === "incomplete") {
+                        // Keep showing loading state
+                        return;
+                    }
+                    
+                    if (msg.status === "complete") {
+                        addDebugLog('推薦完成，顯示結果');
+                        hideLoading();
+                        if (msg.content && msg.content.trim()) {
+                            parseAndDisplayRecommendations(msg.content);
+                        } else {
+                            showError("收到空的推薦結果");
+                        }
+                        resetRecommendButton();
+                    }
+                } catch (error) {
+                    console.error('Recommendation handler error:', error);
+                    showError("處理推薦結果時發生錯誤：" + error.message);
+                    resetRecommendButton();
+                }
+            });
+        }
+
+        function resetAnalyzeButton() {
+            analyzeBtn.disabled = false;
+            analyzeBtn.textContent = '🔍 分析營養標籤';
+        }
+
+        // Function to collect personal information
+        function collectPersonalInfo() {
+            const personalInfo = {
+                gender: document.getElementById('gender').value,
+                age: document.getElementById('age').value,
+                height: document.getElementById('height').value,
+                weight: document.getElementById('weight').value,
+                activityLevel: document.getElementById('activityLevel').value,
+                medicalConditions: document.getElementById('medicalConditions').value.trim(),
+                currentMedications: document.getElementById('currentMedications').value.trim(),
+                customHealthGoals: document.getElementById('customHealthGoals').value.trim()
+            };
+
+            // Collect specific improvement targets
+            const targets = [];
+            const target1 = document.getElementById('target1').value.trim();
+            const target2 = document.getElementById('target2').value.trim();
+            const target3 = document.getElementById('target3').value.trim();
+            
+            if (target1) targets.push(target1);
+            if (target2) targets.push(target2);
+            if (target3) targets.push(target3);
+            
+            personalInfo.improvementTargets = targets;
+            
+            // Collect checked health goals
+            const healthGoals = [];
+            const goalCheckboxes = [
+                { id: 'skinIssues', label: '皮膚問題' },
+                { id: 'weightLoss', label: '減肥瘦身' },
+                { id: 'jointPain', label: '關節疼痛' },
+                { id: 'sciatica', label: '坐骨神經痛' },
+                { id: 'immunity', label: '提升免疫力' },
+                { id: 'energy', label: '增加體力' },
+                { id: 'sleep', label: '改善睡眠' },
+                { id: 'digestion', label: '消化問題' },
+                { id: 'memory', label: '增強記憶' },
+                { id: 'stress', label: '舒緩壓力' },
+                { id: 'heartHealth', label: '心血管健康' },
+                { id: 'eyeHealth', label: '護眼明目' },
+                { id: 'boneHealth', label: '骨骼健康' },
+                { id: 'hairHealth', label: '頭髮健康' },
+                { id: 'bloodSugar', label: '血糖控制' },
+                { id: 'cholesterol', label: '膽固醇管理' }
+            ];
+            
+            goalCheckboxes.forEach(goal => {
+                if (document.getElementById(goal.id).checked) {
+                    healthGoals.push(goal.label);
+                }
+            });
+            
+            personalInfo.healthGoals = healthGoals;
+            
+            // Collect AI smart features preferences
+            const smartFeatures = [];
+            const featureCheckboxes = [
+                { id: 'aiPersonalized', label: 'AI個人化分析' },
+                { id: 'smartRecommendation', label: '智能產品推薦引擎' },
+                { id: 'oneClickShopping', label: '一鍵購物整合' },
+                { id: 'progressTracking', label: '健康成效追蹤' },
+                { id: 'brandPartnership', label: '品牌合作優惠' },
+                { id: 'premiumMembership', label: '高級會員訂閱' }
+            ];
+            
+            featureCheckboxes.forEach(feature => {
+                if (document.getElementById(feature.id).checked) {
+                    smartFeatures.push(feature.label);
+                }
+            });
+            
+            personalInfo.smartFeatures = smartFeatures;
+
+            // Collect budget information
+            const customBudget = document.getElementById('customBudget').value.trim();
+            const selectedBudgetRadio = document.querySelector('input[name="budget"]:checked');
+            
+            if (customBudget) {
+                personalInfo.budget = `HK$ ${customBudget}`;
+                personalInfo.budgetAmount = parseInt(customBudget);
+            } else if (selectedBudgetRadio) {
+                const budgetMap = {
+                    'under650': { label: 'HK$ 650 以下', amount: 650 },
+                    '650-1000': { label: 'HK$ 650-1,000', amount: 825 },
+                    '1000-1500': { label: 'HK$ 1,000-1,500', amount: 1250 },
+                    'over1500': { label: 'HK$ 1,500 以上', amount: 1800 }
+                };
+                const budgetInfo = budgetMap[selectedBudgetRadio.value];
+                personalInfo.budget = budgetInfo.label;
+                personalInfo.budgetAmount = budgetInfo.amount;
+            }
+            
+            // Calculate BMI if height and weight are provided
+            if (personalInfo.height && personalInfo.weight) {
+                const heightM = personalInfo.height / 100;
+                personalInfo.bmi = (personalInfo.weight / (heightM * heightM)).toFixed(1);
+            }
+            
+            return personalInfo;
+        }
+
+        // Function to format personal info for AI prompt
+        function formatPersonalInfoForPrompt(info) {
+            const hasBasicInfo = info.gender || info.age || info.height || info.weight || info.medicalConditions || info.currentMedications;
+            const hasHealthGoals = (info.healthGoals && info.healthGoals.length > 0) || info.customHealthGoals;
+            
+            if (!hasBasicInfo && !hasHealthGoals) {
+                return '';
+            }
+            
+            let personalText = '\n\n## 個人資料\n';
+            
+            if (info.gender) {
+                personalText += `- 性別: ${info.gender === 'male' ? '男性' : '女性'}\n`;
+            }
+            if (info.age) {
+                personalText += `- 年齡: ${info.age}歲\n`;
+            }
+            if (info.height) {
+                personalText += `- 身高: ${info.height}cm\n`;
+            }
+            if (info.weight) {
+                personalText += `- 體重: ${info.weight}kg\n`;
+            }
+            if (info.bmi) {
+                personalText += `- BMI: ${info.bmi}\n`;
+            }
+            if (info.activityLevel) {
+                const activityMap = {
+                    'sedentary': '久坐 (很少運動)',
+                    'light': '輕度 (每週1-3次運動)',
+                    'moderate': '中度 (每週3-5次運動)',
+                    'active': '高度 (每週6-7次運動)',
+                    'very_active': '極高 (每天運動或體力工作)'
+                };
+                personalText += `- 活動量: ${activityMap[info.activityLevel]}\n`;
+            }
+            if (info.medicalConditions) {
+                personalText += `- 健康狀況: ${info.medicalConditions}\n`;
+            }
+            if (info.currentMedications) {
+                personalText += `- 目前用藥/補充品: ${info.currentMedications}\n`;
+            }
+            
+            // Add health goals
+            if (hasHealthGoals) {
+                personalText += `- 想要改善的健康問題: `;
+                const allGoals = [];
+                if (info.healthGoals && info.healthGoals.length > 0) {
+                    allGoals.push(...info.healthGoals);
+                }
+                if (info.customHealthGoals) {
+                    allGoals.push(info.customHealthGoals);
+                }
+                personalText += allGoals.join('、') + '\n';
+            }
+            
+            // Add specific improvement targets
+            if (info.improvementTargets && info.improvementTargets.length > 0) {
+                personalText += `- 具體改善目標: ${info.improvementTargets.join('、')}\n`;
+            }
+            
+            // Add budget information
+            if (info.budget) {
+                personalText += `- 每月預算: ${info.budget}\n`;
+            }
+            
+            // Add smart features preferences
+            if (info.smartFeatures && info.smartFeatures.length > 0) {
+                personalText += `- 啟用智能功能: ${info.smartFeatures.join('、')}\n`;
+            }
+            
+            return personalText;
+        }
+
+        // Analyze button click
+        analyzeBtn.addEventListener('click', async function() {
+            console.log('Analyze button clicked');
+            
+            if (platform === 'standalone') {
+                // Standalone mode - use simulated analysis
+                const personalInfo = collectPersonalInfo();
+                
+                // Disable button during analysis
+                analyzeBtn.disabled = true;
+                analyzeBtn.textContent = '分析中...';
+                
+                showLoading();
+                hideError();
+                hideResults();
+                
+                // Simulate processing time
+                setTimeout(() => {
+                    const simulatedResult = simulateNutritionAnalysis(personalInfo);
+                    hideLoading();
+                    parseAndDisplayResults(simulatedResult);
+                    resetAnalyzeButton();
+                }, 2000);
+                
+                return;
+            }
+            
+            if (!selectedFile) {
+                showError('請先選擇圖片文件');
+                return;
+            }
+            
+            // Additional file validation
+            if (selectedFile.size > 10 * 1024 * 1024) { // 10MB limit
+                showError('圖片文件過大，請選擇小於 10MB 的圖片');
+                return;
+            }
+            
+            console.log('Starting analysis with file:', selectedFile.name, 'Size:', selectedFile.size, 'Type:', selectedFile.type);
+            
+            // Collect personal information
+            const personalInfo = collectPersonalInfo();
+            const personalInfoText = formatPersonalInfoForPrompt(personalInfo);
+            
+            // Disable button during analysis
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = '分析中...';
+            
+            showLoading();
+            hideError();
+            hideResults();
+            
+            try {
+                const prompt = `@Claude-Sonnet-4 請分析這個營養補充品標籤圖片，並提供以下資訊（請用繁體中文回答）：${personalInfoText}
+
+## 營養成分分析
+請識別並列出標籤上的所有營養成分及其含量
+
+## 營養素功效
+詳細說明每種營養素對人體的功效和作用
+
+## 建議攝取量
+根據標籤資訊和一般建議，說明每日建議攝取量和使用方式
+
+${personalInfoText ? '## 個人化適用性評估\n根據提供的個人資料，評估此營養補充品是否適合使用者：\n- 是否適合此年齡和性別\n- 根據BMI和活動量的建議\n- 與現有健康狀況或用藥的互動風險\n- 個人化的劑量建議\n- 特別注意事項\n\n' : ''}## 注意事項
+提及可能的副作用、禁忌症或注意事項
+
+請確保資訊準確且實用。如果無法清楚識別標籤內容，請說明哪些部分無法辨識。${personalInfoText ? '\n\n⚠️ 重要：此分析僅供參考，如有健康問題請諮詢專業醫療人員。' : ''}`;
+
+                console.log('Sending message to Poe API with file:', selectedFile.name);
+                
+                const result = await window.Poe.sendUserMessage(prompt, {
+                    attachments: [selectedFile],
+                    handler: "nutrition-analysis",
+                    stream: false,
+                    openChat: false
+                });
+                
+                console.log('Message sent successfully:', JSON.stringify(result));
+                
+                // Set a timeout in case handler doesn't get called
+                setTimeout(() => {
+                    if (analyzeBtn.disabled) {
+                        showError('分析超時，請重試');
+                        resetAnalyzeButton();
+                    }
+                }, 60000); // 60 second timeout
+                
+            } catch (err) {
+                console.error('Error during analysis:', err);
+                let errorMsg = "發送分析請求時發生錯誤：";
+                
+                if (err.errorType) {
+                    switch(err.errorType) {
+                        case "USER_REJECTED_CONFIRMATION":
+                            errorMsg += "用戶取消了確認對話框";
+                            break;
+                        case "INVALID_INPUT":
+                            errorMsg += "輸入無效，請檢查圖片格式";
+                            break;
+                        case "ANOTHER_CONFIRMATION_IS_OPEN":
+                            errorMsg += "另一個確認對話框已開啟";
+                            break;
+                        default:
+                            errorMsg += err.message || "未知錯誤";
+                    }
+                } else {
+                    errorMsg += err.message || "未知錯誤";
+                }
+                
+                showError(errorMsg);
+                resetAnalyzeButton();
+            }
+        });
+
+        // Recommend button click
+        document.getElementById('recommendBtn').addEventListener('click', async function() {
+            addDebugLog('推薦按鈕被點擊');
+            
+            // Collect personal information
+            const personalInfo = collectPersonalInfo();
+            const hasHealthGoals = (personalInfo.healthGoals && personalInfo.healthGoals.length > 0) || personalInfo.customHealthGoals;
+            
+            if (!hasHealthGoals) {
+                showError('請先選擇想要改善的健康問題，以獲得個人化推薦');
+                return;
+            }
+            
+            if (platform === 'standalone') {
+                // Standalone mode - use simulated recommendations
+                
+                // Disable button during recommendation
+                this.disabled = true;
+                this.textContent = '獲取推薦中...';
+                
+                showLoading();
+                hideError();
+                hideResults();
+                
+                // Simulate processing time
+                setTimeout(() => {
+                    const simulatedResult = simulateProductRecommendations(personalInfo);
+                    hideLoading();
+                    parseAndDisplayRecommendations(simulatedResult);
+                    resetRecommendButton();
+                }, 3000);
+                
+                return;
+            }
+            
+            // Disable button during recommendation
+            this.disabled = true;
+            this.textContent = '獲取推薦中...';
+            
+            showLoading();
+            hideError();
+            hideResults();
+            
+            try {
+                const personalInfoText = formatPersonalInfoForPrompt(personalInfo);
+                
+                // Create smart features enhanced prompt
+                let smartPrompt = '';
+                if (personalInfo.smartFeatures && personalInfo.smartFeatures.length > 0) {
+                    const features = personalInfo.smartFeatures;
+                    
+                    if (features.includes('AI個人化分析')) {
+                        smartPrompt += `\n### 🤖 AI個人化深度分析\n基於用戶的健康數據、生活型態和目標，提供深度個人化分析：\n- 健康風險評估和預防建議\n- 營養素缺乏可能性分析\n- 基於遺傳傾向的建議（如適用）\n- 生活方式優化建議\n`;
+                    }
+                    
+                    if (features.includes('智能產品推薦引擎')) {
+                        smartPrompt += `\n### 🧠 智能產品推薦引擎\n使用AI演算法提供最精確的產品配對：\n- 成分協同效應分析\n- 最佳時間服用建議\n- 產品互動性檢查\n- 個人化劑量優化\n`;
+                    }
+                    
+                    if (features.includes('一鍵購物整合')) {
+                        smartPrompt += `\n### 🛒 一鍵購物整合\n提供便捷的購物體驗：\n- 推薦產品的直接購買連結\n- 比價和優惠資訊\n- 庫存狀態和配送時間\n- 自動補貨提醒設定\n**購買連結範例：**\n- iHerb: [產品名稱](https://iherb.com/product-link) - 15% OFF\n- Vitacost: [產品名稱](https://vitacost.com/product-link) - 20% OFF\n- 本地藥房: [產品名稱] - 門市取貨\n`;
+                    }
+                    
+                    if (features.includes('健康成效追蹤')) {
+                        smartPrompt += `\n### 📈 健康成效追蹤計劃\n制定可量化的追蹤方案：\n- 每週/每月的健康指標監測\n- 預期改善時間表\n- 成效評估標準\n- 調整建議時機\n**追蹤指標範例：**\n- 第1週：基礎數據記錄\n- 第4週：初步效果評估\n- 第8週：中期成果檢視\n- 第12週：整體效果評估\n`;
+                    }
+                    
+                    if (features.includes('品牌合作優惠')) {
+                        smartPrompt += `\n### 🤝 品牌合作專屬優惠\n提供獨家折扣和合作方案：\n- 會員專屬折扣碼\n- 新品搶先體驗\n- 品牌直送服務\n- VIP客戶禮遇\n**本月合作優惠：**\n- Thorne: 專屬8折優惠碼 "HEALTH20"\n- NOW Foods: 買二送一特惠\n- 大研生醫: 新會員首購7折\n`;
+                    }
+                    
+                    if (features.includes('高級會員訂閱')) {
+                        smartPrompt += `\n### 👑 高級會員訂閱服務\n升級至高級會員享受專業服務：\n- 每月專業營養師線上諮詢（30分鐘）\n- 定期健康報告和建議調整\n- 新品免費試用資格\n- 24/7專屬客服支援\n**會員方案：**\n- 標準會員：HK$98/月\n- 高級會員：HK$198/月\n- 白金會員：HK$398/月\n`;
+                    }
+                }
+                
+                const prompt = `@Claude-Sonnet-4 請根據以下個人資料，推薦適合的營養補充品（請用繁體中文回答）：${personalInfoText}
+
+## 🎯 智能營養產品推薦系統
+根據用戶想要改善的健康問題和啟用的智能功能，提供全面的營養補充品建議：
+
+### 針對性推薦
+對於每個健康問題，分別推薦：
+- 最適合的營養素或補充品類型
+- 具體的產品建議（如維他命、礦物質、草本補充品等）
+- 推薦的原因和科學依據
+- 預期改善時間和效果
+
+### 個人化建議
+考慮用戶的年齡、性別、BMI、活動量等因素：
+- 精確劑量建議
+- 最佳服用時間建議
+- 與現有用藥的注意事項
+- 生活方式配合建議
+
+${smartPrompt}
+
+### 品牌認證推薦
+優先推薦有認證的可靠品牌：
+
+**USP認證品牌：**
+- Nature Made (美國藥典認證，維他命B群、魚油、維他命C)
+- 品質保證：★★★★★
+
+**NSF認證品牌：**
+- Thorne (NSF Sport + GMP，肌醇複合物、輔酶Q10、維他命B群)
+- Garden of Life (NSF有機認證，維他命B群、益生菌)
+- 品質保證：★★★★★
+
+**GMP認證品牌：**
+- NOW Foods (GMP + 第三方檢測，肌醇、α-硫辛酸、左旋肉鹼)
+- 品質保證：★★★★☆
+
+**第三方檢測品牌：**
+- Life Extension (第三方檢測，綠茶萃取物、Omega-3、鋅)
+- Nordic Naturals (第三方純度檢測，Omega-3魚油)
+- 品質保證：★★★★☆
+
+**台灣本土認證品牌：**
+- 大研生醫 (ISO 22000、HACCP，德國肌醇、藻油DHA)
+- 船井生醫 (健食字號認證)
+- 白蘭氏 (ISO認證，維他命B群)
+
+### 建議品牌組合方案
+根據用戶的健康目標和預算，提供完整的品牌搭配建議：
+
+#### 💰 經濟實惠組合 (月費用約 HK$650-900 / USD$80-115)
+針對預算有限但注重品質的用戶：
+- **基礎款組合**：選用NOW Foods、Nature Made等CP值高的認證品牌
+- **適合族群**：學生、小資族、初次嘗試營養補充品者
+- **品質保證**：★★★★☆
+
+#### 💎 優質平衡組合 (月費用約 HK$1,000-1,400 / USD$125-180)  
+針對追求品質與效果平衡的用戶：
+- **進階款組合**：混搭Thorne、Life Extension、Nordic Naturals等品牌
+- **適合族群**：上班族、注重健康的成年人
+- **品質保證**：★★★★★
+
+#### 🏆 頂級專業組合 (月費用約 HK$1,500-2,000 / USD$190-250)
+針對追求最高品質和專業配方的用戶：
+- **專業款組合**：主要選用Thorne、Garden of Life等頂級認證品牌
+- **適合族群**：高收入族群、慢性病患者、運動員
+- **品質保證**：★★★★★
+
+#### 🇹🇼 台灣本土組合 (月費用約 HK$750-1,150 / USD$95-145)
+針對偏好本土品牌和方便購買的用戶：
+- **在地款組合**：大研生醫、船井生醫、白蘭氏等本土認證品牌
+- **適合族群**：偏好本土品牌、重視售後服務者
+- **品質保證**：★★★★☆
+
+請針對用戶的具體健康目標，從以上組合中選擇最適合的方案，並列出具體的產品清單和每月預估費用。
+
+### 優先順序
+根據健康問題的重要性和改善效果，建議優先購買的產品，並優先選擇有認證的品牌
+
+### 購買指南
+- 尋找瓶身上的認證標誌：USP Verified、NSF圓形標誌、GMP Certified
+- 推薦購買通路：iHerb、Vitacost、本地連鎖藥房
+- 避免價格異常便宜或無認證的不知名品牌
+
+### 注意事項
+- 購買時要注意的品質標準和認證標誌
+- 可能的副作用或禁忌
+- 建議諮詢醫生的情況
+
+⚠️ 重要：此推薦僅供參考，請在購買前諮詢專業醫療人員或營養師。認證確保品質和純度，但不等於療效保證。`;
+
+                addDebugLog('發送推薦請求');
+                
+                const result = await window.Poe.sendUserMessage(prompt, {
+                    handler: "product-recommendations",
+                    stream: true,
+                    openChat: false
+                });
+                
+                addDebugLog('推薦請求成功發送', result);
+                
+                // Set a timeout in case handler doesn't get called
+                setTimeout(() => {
+                    if (this.disabled) {
+                        showError('推薦請求超時，請重試');
+                        resetRecommendButton();
+                    }
+                }, 60000); // 60 second timeout
+                
+            } catch (err) {
+                console.error('Error during recommendation:', err);
+                addDebugLog('推薦請求錯誤', err);
+                
+                let errorMsg = "獲取推薦時發生錯誤：";
+                
+                if (err.errorType) {
+                    switch(err.errorType) {
+                        case "USER_REJECTED_CONFIRMATION":
+                            errorMsg += "用戶取消了確認對話框";
+                            break;
+                        case "INVALID_INPUT":
+                            errorMsg += "輸入無效";
+                            break;
+                        case "ANOTHER_CONFIRMATION_IS_OPEN":
+                            errorMsg += "另一個確認對話框已開啟";
+                            break;
+                        default:
+                            errorMsg += err.message || "未知錯誤";
+                    }
+                } else {
+                    errorMsg += err.message || "未知錯誤";
+                }
+                
+                showError(errorMsg);
+                resetRecommendButton();
+            }
+        });
+
+        function resetRecommendButton() {
+            const recommendBtn = document.getElementById('recommendBtn');
+            recommendBtn.disabled = false;
+            recommendBtn.textContent = '💊 獲取營養產品推薦';
+        }
+
+        function parseAndDisplayRecommendations(content) {
+            addDebugLog('解析推薦結果', { contentLength: content.length });
+            
+            // Show recommendations section
+            const productRecommendationsSection = document.getElementById('productRecommendationsSection');
+            document.getElementById('productRecommendations').innerHTML = marked.parse(content);
+            productRecommendationsSection.classList.remove('hidden');
+            
+            // Hide other sections for recommendation-only results
+            document.getElementById('personalSuitabilitySection').classList.add('hidden');
+            
+            resultsSection.classList.remove('hidden');
+        }
+
+        // Reset button
+        resetBtn.addEventListener('click', function() {
+            selectedFile = null;
+            imageInput.value = '';
+            imagePreview.classList.add('hidden');
+            analyzeBtn.classList.add('hidden');
+            hideLoading();
+            hideError();
+            hideResults();
+        });
+
+        function showLoading() {
+            loadingState.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            loadingState.classList.add('hidden');
+        }
+
+        function showError(message, details = null) {
+            addDebugLog('顯示錯誤', { message, details });
+            errorMessage.textContent = message;
+            
+            if (details) {
+                const errorDetails = document.getElementById('errorDetails');
+                errorDetails.textContent = details;
+                errorDetails.classList.remove('hidden');
+            }
+            
+            errorState.classList.remove('hidden');
+            hideLoading();
+        }
+
+        function hideError() {
+            errorState.classList.add('hidden');
+        }
+
+        function hideResults() {
+            resultsSection.classList.add('hidden');
+        }
+
+        function parseAndDisplayResults(content) {
+            // Parse the markdown content and extract sections
+            const sections = {
+                personal: '',
+                analysis: '',
+                benefits: '',
+                dosage: '',
+                safety: ''
+            };
+
+            // Split content by headers
+            const lines = content.split('\n');
+            let currentSection = '';
+            
+            for (let line of lines) {
+                if (line.includes('個人化適用性評估') || line.includes('適用性評估')) {
+                    currentSection = 'personal';
+                    continue;
+                } else if (line.includes('營養成分分析') || line.includes('成分分析')) {
+                    currentSection = 'analysis';
+                    continue;
+                } else if (line.includes('營養素功效') || line.includes('功效')) {
+                    currentSection = 'benefits';
+                    continue;
+                } else if (line.includes('建議攝取量') || line.includes('攝取量') || line.includes('用法')) {
+                    currentSection = 'dosage';
+                    continue;
+                } else if (line.includes('注意事項') || line.includes('副作用') || line.includes('禁忌')) {
+                    currentSection = 'safety';
+                    continue;
+                }
+                
+                if (currentSection && line.trim()) {
+                    sections[currentSection] += line + '\n';
+                }
+            }
+
+            // If sections are not clearly divided, show all content in analysis section
+            if (!sections.analysis && !sections.benefits && !sections.dosage && !sections.safety && !sections.personal) {
+                sections.analysis = content;
+            }
+
+            // Show/hide personal suitability section based on content
+            const personalSuitabilitySection = document.getElementById('personalSuitabilitySection');
+            if (sections.personal && sections.personal.trim()) {
+                document.getElementById('personalSuitability').innerHTML = marked.parse(sections.personal);
+                personalSuitabilitySection.classList.remove('hidden');
+            } else {
+                personalSuitabilitySection.classList.add('hidden');
+            }
+
+            // Convert markdown to HTML and display other sections
+            document.getElementById('nutritionalAnalysis').innerHTML = marked.parse(sections.analysis || '未找到營養成分資訊');
+            document.getElementById('healthBenefits').innerHTML = marked.parse(sections.benefits || '未找到功效資訊');
+            document.getElementById('dosageRecommendations').innerHTML = marked.parse(sections.dosage || '未找到攝取量建議');
+            document.getElementById('safetyInfo').innerHTML = marked.parse(sections.safety || '未找到注意事項');
+
+            resultsSection.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
+Commit message: Add nutrition analyzer application
+   - Description: Complete HTML app with AI features
